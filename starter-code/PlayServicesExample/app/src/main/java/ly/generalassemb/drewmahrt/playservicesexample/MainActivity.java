@@ -38,6 +38,7 @@ public class MainActivity extends AppCompatActivity implements GoogleApiClient.C
     private  Button mButton;
     private  MapView mMap;
 
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -66,37 +67,22 @@ public class MainActivity extends AppCompatActivity implements GoogleApiClient.C
         AnalyticsApplication application = (AnalyticsApplication) getApplication();
         mTracker = application.getDefaultTracker();
 
-        // TODO: Fix connectionHint error.
-
-        @Override
-        public void onConnected (Bundle connectionHint){
-            if (ActivityCompat.checkSelfPermission(
-                    this,
-                    Manifest.permission.ACCESS_FINE_LOCATION)
-                    != PackageManager.PERMISSION_GRANTED &&
-                    ActivityCompat.checkSelfPermission(
-                            this,
-                            Manifest.permission.ACCESS_COARSE_LOCATION)
-                            != PackageManager.PERMISSION_GRANTED) {
-
-                mLastLocation = LocationServices.FusedLocationApi.getLastLocation(
-                        mGoogleApiClient);
-
-                RequestPermissionsAsyncTask requestPermissionsAsyncTask = new RequestPermissionsAsyncTask();
-                requestPermissionsAsyncTask.execute();
-
-                return;
-            }
-
-        }
-
         mButton.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
                 if (mLastLocation != null) {
                     mLatitudeText.setText(String.valueOf(mLastLocation.getLatitude()));
                     mLongitudeText.setText(String.valueOf(mLastLocation.getLongitude()));
-                    // TODO: Add map intent
+
+                    //TODO: Replace this with variable for current location.
+                    Uri gmmIntentUri = Uri.parse("google.streetview:cbll=46.414382,10.013988");
+                    Intent mapIntent = new Intent(Intent.ACTION_VIEW, gmmIntentUri);
+                    // Make the Intent explicit by setting the Google Maps package
+                    mapIntent.setPackage("com.google.android.apps.maps");
+                    // Attempt to start an activity that can handle the Intent
+                    if (mapIntent.resolveActivity(getPackageManager()) != null) {
+                        startActivity(mapIntent);
+                    }
                 }
 
             }
@@ -166,7 +152,24 @@ public class MainActivity extends AppCompatActivity implements GoogleApiClient.C
     }
 
     @Override
-    public void onConnected(Bundle bundle) {
+    public void onConnected(Bundle connectionHint){
+        if (ActivityCompat.checkSelfPermission(
+                this,
+                Manifest.permission.ACCESS_FINE_LOCATION)
+                != PackageManager.PERMISSION_GRANTED &&
+                ActivityCompat.checkSelfPermission(
+                        this,
+                        Manifest.permission.ACCESS_COARSE_LOCATION)
+                        != PackageManager.PERMISSION_GRANTED) {
+
+            mLastLocation = LocationServices.FusedLocationApi.getLastLocation(
+                    mGoogleApiClient);
+
+            RequestPermissionsAsyncTask requestPermissionsAsyncTask = new RequestPermissionsAsyncTask();
+            requestPermissionsAsyncTask.execute();
+
+            return;
+        }
 
     }
 
