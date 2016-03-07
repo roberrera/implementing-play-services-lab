@@ -34,9 +34,6 @@ public class MainActivity extends AppCompatActivity implements GoogleApiClient.C
     private Tracker mTracker;
     private GoogleApiClient mGoogleApiClient;
     private Location mLastLocation;
-    private TextView mLatitudeText, mLongitudeText;
-    private  Button mButton;
-    private  MapView mMap;
 
 
     @Override
@@ -44,10 +41,7 @@ public class MainActivity extends AppCompatActivity implements GoogleApiClient.C
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
 
-        mButton = (Button) findViewById(R.id.button_map);
-        mMap = (MapView) findViewById(R.id.mapview);
-        mLatitudeText = (TextView) findViewById(R.id.textview_latitude);
-        mLongitudeText = (TextView) findViewById(R.id.textview_longitude);
+        Button mButton = (Button) findViewById(R.id.button_map);
 
         // Create an instance of GoogleAPIClient.
         if (mGoogleApiClient == null) {
@@ -58,11 +52,6 @@ public class MainActivity extends AppCompatActivity implements GoogleApiClient.C
                     .build();
         }
 
-        mGoogleApiClient = new GoogleApiClient.Builder(this)
-                .enableAutoManage(this, this)
-                .addApi(LocationServices.API)
-                .build();
-
 
         AnalyticsApplication application = (AnalyticsApplication) getApplication();
         mTracker = application.getDefaultTracker();
@@ -70,27 +59,27 @@ public class MainActivity extends AppCompatActivity implements GoogleApiClient.C
         mButton.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
+                mTracker.send(new HitBuilders.EventBuilder()
+                        .setCategory("Action")
+                        .setAction("Map")
+                        .setLabel("Map my location")
+                        .build());
+
                 if (mLastLocation != null) {
-                    mLatitudeText.setText(String.valueOf(mLastLocation.getLatitude()));
-                    mLongitudeText.setText(String.valueOf(mLastLocation.getLongitude()));
-
-                    //TODO: Replace this with variable for current location.
-                    Uri gmmIntentUri = Uri.parse("google.streetview:cbll=46.414382,10.013988");
-                    Intent mapIntent = new Intent(Intent.ACTION_VIEW, gmmIntentUri);
-                    // Make the Intent explicit by setting the Google Maps package
-                    mapIntent.setPackage("com.google.android.apps.maps");
-                    // Attempt to start an activity that can handle the Intent
-                    if (mapIntent.resolveActivity(getPackageManager()) != null) {
-                        startActivity(mapIntent);
-                    }
+                    Intent intent = new Intent(MainActivity.this, MapsActivity.class);
+                    intent.putExtra("Latitude", mLastLocation.getLatitude());
+                    intent.putExtra("Longitude", mLastLocation.getLongitude());
+                    startActivity(intent);
+                } else {
+                    Toast.makeText(MainActivity.this, "Last location is null", Toast.LENGTH_SHORT).show();
                 }
-
             }
         });
 
+
     }
 
-    public class RequestPermissionsAsyncTask extends AsyncTask<Void, Void, Void>{
+    public class RequestPermissionsAsyncTask extends AsyncTask<Void, Void, Void> {
         @Override
         protected Void doInBackground(Void... params) {
 
@@ -111,19 +100,17 @@ public class MainActivity extends AppCompatActivity implements GoogleApiClient.C
                 if (grantResults.length > 0
                         && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
 
-                    // permission was granted, yay! Do the
-                    // location-related task you need to do.
+                    if (ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED && ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_COARSE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
+                        return;
+                    }
+                    mLastLocation = LocationServices.FusedLocationApi.getLastLocation(
+                            mGoogleApiClient);
 
                 } else {
 
-                    // permission denied, boo! Disable the
-                    // functionality that depends on this permission.
+                    Toast.makeText(MainActivity.this, "Please enable Location permissions", Toast.LENGTH_SHORT).show();
                 }
-                return;
             }
-
-            // other 'case' lines to check for other
-            // permissions this app might request
         }
     }
 
@@ -162,15 +149,11 @@ public class MainActivity extends AppCompatActivity implements GoogleApiClient.C
                         Manifest.permission.ACCESS_COARSE_LOCATION)
                         != PackageManager.PERMISSION_GRANTED) {
 
-            mLastLocation = LocationServices.FusedLocationApi.getLastLocation(
-                    mGoogleApiClient);
-
             RequestPermissionsAsyncTask requestPermissionsAsyncTask = new RequestPermissionsAsyncTask();
             requestPermissionsAsyncTask.execute();
-
-            return;
         }
-
+        mLastLocation = LocationServices.FusedLocationApi.getLastLocation(
+                mGoogleApiClient);
     }
 
     @Override
